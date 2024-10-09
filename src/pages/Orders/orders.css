@@ -1,0 +1,21 @@
+.order-table-container {
+  width: 80%;
+  height: calc(100vh - 60px);
+  margin: 20px auto;
+  /* Add any other styles you need here */
+}
+.new-product-button {
+  background-color: #131618 !important; /* Primary color */
+  color: white !important; /* Text color */
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif !important; /* Font family */
+  font-size: 16px !important; /* Font size */
+  font-weight: 500 !important; /* Medium font weight */
+  line-height: 1.5 !important; /* Line height */
+  letter-spacing: 0.5px !important; 
+  border: none !important; /* No border */
+  border-radius: 8px !important; 
+  cursor: pointer !important; 
+  transition: background-color 0.3s ease !important; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; 
+  text-align: center;
+}

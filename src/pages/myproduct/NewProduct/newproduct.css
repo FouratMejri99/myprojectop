@@ -1,0 +1,122 @@
+ 
+
+.box-one-product {
+    position: absolute;
+    left: 300px;
+    top: 120px;
+    height: 300px;
+    width: 450px;
+    border-radius: 19px;
+    background-color: white;
+ }
+.box-two-product {
+    position: absolute;
+    left: 800px;
+    top: 120px;
+    height: 300px;
+    width: 450px;
+    border-radius: 19px;
+    background-color: white;
+}
+.box-one-input {
+ margin-left: 6%;
+}
+.box-one-input-adjust {
+    display: table-caption;
+    margin-top: 5%;
+    font-size: 18px;
+}
+
+textarea {
+    width: 300px;
+    height: 200px;
+  }
+  
+  input {
+    width: 300px;
+
+  }
+  textarea::placeholder {
+    color: #809FB8;
+  }
+  input::placeholder {
+    color: #809FB8;
+
+  }
+  
+  .box-two-input-adjust {
+    display: table-caption;
+    margin-top: 5%;
+    margin-left: 10%;
+
+  }
+  .box-input-margin{
+    margin-bottom: 10%;
+  }
+ 
+.Title-new-product {
+  
+    font-family: 'ABeeZee';
+    font-style: Arial, Helvetica, sans-serif;
+    font-weight: 450 !important;
+    font-size: 20px !important;
+    padding: 22px;
+    text-align: left;
+
+
+}
+.Title-detail {
+  
+  font-family: 'ABeeZee';
+  font-style: Arial, Helvetica, sans-serif;
+  font-weight: 450 !important;
+  font-size: 18px !important;
+  padding: 22px;
+  text-align: left;
+
+
+}
+
+.box-img {
+position: absolute;
+width: 900px;
+height: 200px;
+left: 300px;
+top: 440px;
+border-radius: 19px;
+background-color: white;
+align-self: center;
+overflow: hidden;
+
+}
+
+.box-img img {
+
+  width: 80%;
+  height: 70%;
+  object-fit: contain;
+  margin-left: 125px;
+  margin-top: 15px;
+}
+
+input[type="file"] {
+  margin-left: 420px;
+  margin-top: 15px;
+}
+
+.new-product-button {
+  background-color: #131618 !important; /* Primary color */
+  color: white !important; /* Text color */
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif !important; /* Font family */
+  font-size: 16px !important; /* Font size */
+  font-weight: 500 !important; /* Medium font weight */
+  line-height: 1.5 !important; /* Line height */
+  letter-spacing: 0.5px !important; 
+  border: none !important; /* No border */
+  border-radius: 8px !important; 
+  cursor: pointer !important; 
+  transition: background-color 0.3s ease !important; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; 
+  position: absolute;
+  text-align: center;
+}
