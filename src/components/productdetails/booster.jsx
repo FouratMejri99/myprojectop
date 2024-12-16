@@ -15,6 +15,7 @@ import {
   RadioGroup,
   Select,
   Slider,
+  Typography,
 } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
@@ -78,7 +79,6 @@ function Booster({ isOpen, handleClose, name }) {
       await addDoc(collection(db, "publish"), data);
 
       // Add data to the "public" collection
-      await addDoc(collection(db, "products"), data); // Save to public collection
 
       console.log("Data published successfully to both collections!");
       handleClose(); // Close the dialog after publishing
@@ -90,7 +90,11 @@ function Booster({ isOpen, handleClose, name }) {
   return (
     <Dialog open={isOpen} onClose={handleClose} scroll="paper" maxWidth="md">
       <DialogContent>
-        <DialogTitle>Publishing for: {name}</DialogTitle>
+        <DialogTitle sx={{ paddingBottom: 2 }}>
+          <Typography variant="h5" fontWeight="bold" textAlign="center">
+            Boost Product: {name}
+          </Typography>
+        </DialogTitle>
         <div>
           <FormControl>
             <FormLabel id="audience-label">Who should see your ad?</FormLabel>
@@ -194,7 +198,7 @@ function Booster({ isOpen, handleClose, name }) {
           Close
         </Button>
         <Button onClick={handlePublish} color="primary">
-          Publish
+          Boost
         </Button>
       </DialogActions>
     </Dialog>

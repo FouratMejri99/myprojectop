@@ -15,6 +15,7 @@ import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Toolbar from "@mui/material/Toolbar";
 import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
 import { visuallyHidden } from "@mui/utils";
 import {
   collection,
@@ -46,7 +47,7 @@ const headCells = [
   { id: "category", numeric: true, disablePadding: false, label: "Category" },
   { id: "stock", numeric: true, disablePadding: false, label: "Stock" },
   { id: "price", numeric: true, disablePadding: false, label: "Price" },
-  { id: "publish", numeric: true, disablePadding: false, label: "Publish" },
+  { id: "publish", numeric: true, disablePadding: false, label: "Published" },
 ];
 
 function EnhancedTableHead(props) {
@@ -86,7 +87,13 @@ function EnhancedTableHead(props) {
               direction={orderBy === headCell.id ? order : "asc"}
               onClick={createSortHandler(headCell.id)}
             >
-              {headCell.label}
+              <Typography
+                variant="subtitle1"
+                component="span"
+                style={{ fontWeight: 600 }}
+              >
+                {headCell.label}
+              </Typography>
               {orderBy === headCell.id ? (
                 <Box component="span" sx={visuallyHidden}>
                   {order === "desc" ? "sorted descending" : "sorted ascending"}
@@ -163,8 +170,32 @@ export default function EnhancedTable() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch products
-        const productsSnapshot = await getDocs(collection(db, "products"));
+        // Fetch all marketplaces and sort to get the latest one
+        const marketplacesSnapshot = await getDocs(
+          collection(db, "marketplace")
+        );
+        const marketplaces = marketplacesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Find the latest marketplace by sorting by createdAt
+        const latestMarketplace = marketplaces.sort(
+          (a, b) => b.createdAt - a.createdAt
+        )[0];
+
+        if (!latestMarketplace) {
+          console.error("No marketplaces found.");
+          return;
+        }
+
+        const marketplaceId = latestMarketplace.id;
+
+        // Fetch products from the latest marketplace's subcollection
+        const productsSnapshot = await getDocs(
+          collection(db, "marketplace", marketplaceId, "products")
+        );
+
         const fetchedProducts = productsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -179,11 +210,17 @@ export default function EnhancedTable() {
         // Update the publish field based on your criteria
         await Promise.all(
           fetchedProducts.map(async (product) => {
-            const productRef = doc(db, "products", product.id);
+            const productRef = doc(
+              db,
+              "marketplace",
+              marketplaceId,
+              "products",
+              product.id
+            );
             // Check if product.name is in the published names
             const isPublished = publishedNames.includes(product.name);
             await updateDoc(productRef, {
-              publish: isPublished ? "yes" : "no",
+              publish: isPublished ? "Boosted" : "Draft",
             });
           })
         );
@@ -191,7 +228,7 @@ export default function EnhancedTable() {
         setRows(fetchedProducts);
         setFilteredRows(fetchedProducts); // Initialize filtered rows
       } catch (error) {
-        console.error("Error fetching product data from Firestore:", error);
+        console.error("Error fetching data from Firestore:", error);
       }
     };
 
@@ -351,15 +388,15 @@ export default function EnhancedTable() {
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <img
                           src={
-                            row.imageUrl ? row.imageUrl : "src/img/tnker.png"
+                            row.imageUrl ? row.imageUrl : "src/img/boxes.jpg"
                           }
                           alt="Product Image"
                           style={{
-                            width: "40px",
-                            height: "40px",
+                            width: "50px", // Increased size
+                            height: "50px", // Increased size
                             marginRight: "8px",
                             objectFit: "cover", // Ensures the image fits nicely within the bounds
-                            borderRadius: "50%", // Optional, for rounded image if needed
+                            borderRadius: "12px", // Adjusted for rounded corners (use 50% for full circle)
                           }}
                         />
                         <span>{row.name}</span>
@@ -367,9 +404,52 @@ export default function EnhancedTable() {
                     </TableCell>
 
                     <TableCell align="right">{row.category}</TableCell>
-                    <TableCell align="right">{row.stock}</TableCell>
-                    <TableCell align="right">{row.price}</TableCell>
-                    <TableCell align="right">{row.publish}</TableCell>
+                    <TableCell align="right">
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                        }}
+                      >
+                        {/* Conditional line with gradient and rounded ends */}
+                        <div
+                          style={{
+                            width: "35%", // Adjust width as needed
+                            height: "6px", // Thicker line
+                            background: `linear-gradient(
+          to left, 
+           black ${100 - row.stock}%, 
+          #e7d024  ${row.stock}%
+        )`, // Red portion on the right
+                            marginBottom: "4px", // Space between the line and stock value
+                            borderRadius: "3px", // Rounded ends
+                          }}
+                        ></div>
+                        <Typography variant="caption" color="textSecondary">
+                          {row.stock} in stock
+                        </Typography>
+                      </div>
+                    </TableCell>
+
+                    <TableCell align="right">${row.price}</TableCell>
+                    <TableCell align="right">
+                      <span
+                        style={{
+                          backgroundColor:
+                            row.publish === "Boosted"
+                              ? "green"
+                              : row.publish === "Draft"
+                              ? "#ff465d"
+                              : "transparent", // Default color if none match
+                          color: "white",
+                          padding: "2px 4px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        {row.publish}
+                      </span>
+                    </TableCell>
                   </TableRow>
                 );
               })}

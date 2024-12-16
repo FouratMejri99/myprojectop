@@ -1,274 +1,362 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-import Avatar from '@mui/joy/Avatar';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Checkbox from '@mui/joy/Checkbox';
-import Chip from '@mui/joy/Chip';
-import Divider from '@mui/joy/Divider';
-import Dropdown from '@mui/joy/Dropdown';
-import FormControl from '@mui/joy/FormControl';
-import FormLabel from '@mui/joy/FormLabel';
-import IconButton from '@mui/joy/IconButton';
-import Input from '@mui/joy/Input';
-import Link from '@mui/joy/Link';
-import Menu from '@mui/joy/Menu';
-import MenuButton from '@mui/joy/MenuButton';
-import MenuItem from '@mui/joy/MenuItem';
-import Modal from '@mui/joy/Modal';
-import ModalClose from '@mui/joy/ModalClose';
-import ModalDialog from '@mui/joy/ModalDialog';
-import Option from '@mui/joy/Option';
-import Select from '@mui/joy/Select';
-import Sheet from '@mui/joy/Sheet';
-import Table from '@mui/joy/Table';
-import Typography from '@mui/joy/Typography';
-import * as React from 'react';
+import { db } from "@/config/firebase"; // Adjust the import according to your project structure
+import DeleteIcon from "@mui/icons-material/Delete";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import Box from "@mui/material/Box";
+import Checkbox from "@mui/material/Checkbox";
+import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
+import { alpha } from "@mui/material/styles";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TablePagination from "@mui/material/TablePagination";
+import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
+import Toolbar from "@mui/material/Toolbar";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import { visuallyHidden } from "@mui/utils";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
 
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
-import SearchIcon from '@mui/icons-material/Search';
+function createData(id, name, budget, price, startDate, endDate) {
+  return {
+    id,
+    name,
+    budget,
+    price,
+    startDate,
+    endDate,
+  };
+}
 
-const rows = [
-  { id: 'INV-1234', date: 'Feb 3, 2023', status: 'Refunded', customer: { initial: 'O', name: 'Olivia Ryhe', email: 'olivia@email.com' }},
-  { id: 'INV-1233', date: 'Feb 3, 2023', status: 'Paid', customer: { initial: 'S', name: 'Steve Hampton', email: 'steve.hamp@email.com' }},
-  // ... Add remaining rows as in the original code
+const headCells = [
+  { id: "name", numeric: false, disablePadding: true, label: "Name" },
+  { id: "budget", numeric: true, disablePadding: false, label: "Budget" },
+  { id: "price", numeric: true, disablePadding: false, label: "Price" },
+  {
+    id: "startDate",
+    numeric: true,
+    disablePadding: false,
+    label: "Start Date",
+  },
+  { id: "endDate", numeric: true, disablePadding: false, label: "End Date" },
 ];
 
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-  if (b[orderBy] < a[orderBy]) return -1;
-  if (b[orderBy] > a[orderBy]) return 1;
+function descendingComparator(a, b, orderBy) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
   return 0;
 }
 
-type Order = 'asc' | 'desc';
-
-function getComparator<Key extends keyof any>(order: Order, orderBy: Key): (a: { [key in Key]: number | string }, b: { [key in Key]: number | string }) => number {
-  return order === 'desc'
+function getComparator(order, orderBy) {
+  return order === "desc"
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-function RowMenu() {
+function OrdersTableHead(props) {
+  const {
+    onSelectAllClick,
+    order,
+    orderBy,
+    numSelected,
+    rowCount,
+    onRequestSort,
+  } = props;
+
+  const createSortHandler = (property) => (event) => {
+    onRequestSort(event, property);
+  };
+
   return (
-    <Dropdown>
-      <MenuButton
-        slots={{ root: IconButton }}
-        slotProps={{ root: { variant: 'plain', color: 'neutral', size: 'sm' } }}
-      >
-        <MoreHorizRoundedIcon />
-      </MenuButton>
-      <Menu size="sm" sx={{ minWidth: 140 }}>
-        <MenuItem>Edit</MenuItem>
-        <MenuItem>Rename</MenuItem>
-        <MenuItem>Move</MenuItem>
-        <Divider />
-        <MenuItem color="danger">Delete</MenuItem>
-      </Menu>
-    </Dropdown>
+    <TableHead>
+      <TableRow>
+        <TableCell padding="checkbox">
+          <Checkbox
+            color="primary"
+            indeterminate={numSelected > 0 && numSelected < rowCount}
+            checked={rowCount > 0 && numSelected === rowCount}
+            onChange={onSelectAllClick}
+            inputProps={{ "aria-label": "select all products" }}
+          />
+        </TableCell>
+        {headCells.map((headCell) => (
+          <TableCell
+            key={headCell.id}
+            align={headCell.numeric ? "right" : "left"}
+            padding={headCell.disablePadding ? "none" : "normal"}
+            sortDirection={orderBy === headCell.id ? order : false}
+          >
+            <TableSortLabel
+              active={orderBy === headCell.id}
+              direction={orderBy === headCell.id ? order : "asc"}
+              onClick={createSortHandler(headCell.id)}
+            >
+              {headCell.label}
+              {orderBy === headCell.id ? (
+                <Box component="span" sx={visuallyHidden}>
+                  {order === "desc" ? "sorted descending" : "sorted ascending"}
+                </Box>
+              ) : null}
+            </TableSortLabel>
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
   );
 }
 
-export default function OrderTable() {
-  const [order, setOrder] = React.useState<Order>('desc');
-  const [selected, setSelected] = React.useState<readonly string[]>([]);
-  const [open, setOpen] = React.useState(false);
+OrdersTableHead.propTypes = {
+  numSelected: PropTypes.number.isRequired,
+  onRequestSort: PropTypes.func.isRequired,
+  onSelectAllClick: PropTypes.func.isRequired,
+  order: PropTypes.oneOf(["asc", "desc"]).isRequired,
+  orderBy: PropTypes.string.isRequired,
+  rowCount: PropTypes.number.isRequired,
+};
 
-  const renderFilters = () => (
-    <React.Fragment>
-      <FormControl size="sm">
-        <FormLabel>Status</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by status"
-          slotProps={{ button: { sx: { whiteSpace: 'nowrap' } } }}
+function EnhancedTableToolbar(props) {
+  const { numSelected } = props;
+  return (
+    <Toolbar
+      sx={[
+        { pl: { sm: 2 }, pr: { xs: 1, sm: 1 } },
+        numSelected > 0 && {
+          bgcolor: (theme) =>
+            alpha(
+              theme.palette.primary.main,
+              theme.palette.action.activatedOpacity
+            ),
+        },
+      ]}
+    >
+      {numSelected > 0 ? (
+        <Typography
+          sx={{ flex: "1 1 100%" }}
+          color="inherit"
+          variant="subtitle1"
+          component="div"
         >
-          <Option value="paid">Paid</Option>
-          <Option value="pending">Pending</Option>
-          <Option value="refunded">Refunded</Option>
-          <Option value="cancelled">Cancelled</Option>
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Category</FormLabel>
-        <Select size="sm" placeholder="All">
-          <Option value="all">All</Option>
-          <Option value="refund">Refund</Option>
-          <Option value="purchase">Purchase</Option>
-          <Option value="debit">Debit</Option>
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select size="sm" placeholder="All">
-          <Option value="all">All</Option>
-          <Option value="olivia">Olivia Rhye</Option>
-          <Option value="steve">Steve Hampton</Option>
-          <Option value="ciaran">Ciaran Murray</Option>
-          <Option value="marina">Marina Macdonald</Option>
-          <Option value="charles">Charles Fulton</Option>
-          <Option value="jay">Jay Hooper</Option>
-        </Select>
-      </FormControl>
-    </React.Fragment>
+          {numSelected} selected
+        </Typography>
+      ) : (
+        <Typography
+          sx={{ flex: "1 1 100%" }}
+          variant="h6"
+          id="tableTitle"
+          component="div"
+        >
+          Products
+        </Typography>
+      )}
+      {numSelected > 0 ? (
+        <Tooltip title="Delete">
+          <IconButton>
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Tooltip title="Filter list">
+          <IconButton>
+            <FilterListIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+    </Toolbar>
   );
+}
+
+EnhancedTableToolbar.propTypes = {
+  numSelected: PropTypes.number.isRequired,
+};
+
+export default function OrdersTable() {
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("name");
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(0);
+  const [dense, setDense] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rows, setRows] = useState([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const q = query(
+        collection(db, "products"),
+        where("payement", "==", "paid") // Update to filter by "payement"
+      );
+      const querySnapshot = await getDocs(q);
+      const productData = {};
+
+      // Group products by name
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const { name, budget, price, startdate, enddate } = data;
+
+        if (!productData[name]) {
+          productData[name] = [];
+        }
+
+        productData[name].push({
+          id: doc.id,
+          budget,
+          price,
+          startDate: startdate,
+          endDate: enddate,
+        });
+      });
+
+      // Flatten the grouped data into rows
+      const formattedRows = [];
+      Object.entries(productData).forEach(([name, products]) => {
+        products.forEach((product) => {
+          formattedRows.push(
+            createData(
+              product.id,
+              name,
+              product.budget,
+              product.price,
+              product.startDate,
+              product.endDate
+            )
+          );
+        });
+      });
+
+      setRows(formattedRows);
+    };
+
+    fetchProducts();
+  }, []);
+
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelected = rows.map((n) => n.id);
+      setSelected(newSelected);
+      return;
+    }
+    setSelected([]);
+  };
+
+  const handleClick = (event, id) => {
+    const selectedIndex = selected.indexOf(id);
+    let newSelected = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+    setSelected(newSelected);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const isSelected = (id) => selected.indexOf(id) !== -1;
+
+  const emptyRows =
+    rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
 
   return (
-    <React.Fragment>
-      <Sheet
-        className="SearchAndFilters-mobile"
-        sx={{ display: { xs: 'flex', sm: 'none' }, my: 1, gap: 1 }}
-      >
-        <Input
-          size="sm"
-          placeholder="Search"
-          startDecorator={<SearchIcon />}
-          sx={{ flexGrow: 1 }}
-        />
-        <IconButton
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={() => setOpen(true)}
-        >
-          <FilterAltIcon />
-        </IconButton>
-        <Modal open={open} onClose={() => setOpen(false)}>
-          <ModalDialog aria-labelledby="filter-modal" layout="fullscreen">
-            <ModalClose />
-            <Typography id="filter-modal" level="h2">Filters</Typography>
-            <Divider sx={{ my: 2 }} />
-            <Sheet sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {renderFilters()}
-              <Button color="primary" onClick={() => setOpen(false)}>Submit</Button>
-            </Sheet>
-          </ModalDialog>
-        </Modal>
-      </Sheet>
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          borderRadius: 'sm',
-          py: 2,
-          display: { xs: 'none', sm: 'flex' },
-          flexWrap: 'wrap',
-          gap: 1.5,
-          '& > *': { minWidth: { xs: '120px', md: '160px' } },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search for order</FormLabel>
-          <Input size="sm" placeholder="Search" startDecorator={<SearchIcon />} />
-        </FormControl>
-        {renderFilters()}
-      </Box>
-      <Sheet
-        className="OrderTableContainer"
-        variant="outlined"
-        sx={{
-          display: { xs: 'none', sm: 'initial' },
-          width: '100%',
-          borderRadius: 'sm',
-          flexShrink: 1,
-          overflow: 'auto',
-          minHeight: 0,
-        }}
-      >
-        <Table
-          aria-labelledby="tableTitle"
-          stickyHeader
-          hoverRow
-          sx={{
-            '--TableCell-headBackground': 'var(--joy-palette-background-level1)',
-            '--Table-headerUnderlineThickness': '1px',
-            '--TableRow-hoverBackground': 'var(--joy-palette-background-level1)',
-            '--TableCell-paddingY': '4px',
-            '--TableCell-paddingX': '8px',
-          }}
-        >
-          <thead>
-            <tr>
-              <th style={{ width: 48, textAlign: 'center', padding: '12px 6px' }}>
-                <Checkbox
-                  size="sm"
-                  indeterminate={selected.length > 0 && selected.length !== rows.length}
-                  checked={selected.length === rows.length}
-                  onChange={(event) => {
-                    setSelected(event.target.checked ? rows.map((row) => row.id) : []);
-                  }}
-                  color={selected.length > 0 || selected.length === rows.length ? 'primary' : undefined}
-                  sx={{ verticalAlign: 'text-bottom' }}
-                />
-              </th>
-              <th style={{ width: 120, padding: '12px 6px' }}>
-                <Link
-                  underline="none"
-                  color="primary"
-                  component="button"
-                  onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
-                  endDecorator={<ArrowDropDownIcon />}
-                  sx={{
-                    fontWeight: 'lg',
-                    '& svg': {
-                      transition: '0.2s',
-                      transform: order === 'desc' ? 'rotate(0deg)' : 'rotate(180deg)',
-                    },
-                  }}
-                >
-                  Order ID
-                </Link>
-              </th>
-              <th style={{ width: 120, padding: '12px 6px' }}>Date</th>
-              <th style={{ width: 120, padding: '12px 6px' }}>Status</th>
-              <th style={{ width: 120, padding: '12px 6px' }}>Customer</th>
-              <th style={{ width: 48, textAlign: 'center', padding: '12px 6px' }} />
-            </tr>
-          </thead>
-          <tbody>
+    <Paper sx={{ width: "100%", mb: 2 }}>
+      <EnhancedTableToolbar numSelected={selected.length} />
+      <TableContainer>
+        <Table stickyHeader aria-label="sticky table">
+          <OrdersTableHead
+            numSelected={selected.length}
+            order={order}
+            orderBy={orderBy}
+            onSelectAllClick={handleSelectAllClick}
+            onRequestSort={handleRequestSort}
+            rowCount={rows.length}
+          />
+          <TableBody>
             {rows
-              .sort(getComparator(order, 'id'))
-              .map((row) => (
-                <tr key={row.id}>
-                  <td style={{ textAlign: 'center', padding: '12px 6px' }}>
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(row.id)}
-                      onChange={(event) => {
-                        const newSelected = event.target.checked
-                          ? [...selected, row.id]
-                          : selected.filter((id) => id !== row.id);
-                        setSelected(newSelected);
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '12px 6px' }}>
-                    <Link underline="none" href={`/invoices/${row.id}`}>
-                      {row.id}
-                    </Link>
-                  </td>
-                  <td style={{ padding: '12px 6px' }}>{row.date}</td>
-                  <td style={{ padding: '12px 6px' }}>
-                    <Chip variant="soft" color={row.status === 'Refunded' ? 'danger' : 'success'}>
-                      {row.status}
-                    </Chip>
-                  </td>
-                  <td style={{ padding: '12px 6px' }}>
-                    <Box display="flex" alignItems="center">
-                      <Avatar>{row.customer.initial}</Avatar>
-                      <Box ml={1}>
-                        <Typography level="body2">{row.customer.name}</Typography>
-                        <Typography level="body2" fontSize="sm">{row.customer.email}</Typography>
-                      </Box>
-                    </Box>
-                  </td>
-                  <td style={{ textAlign: 'center', padding: '12px 6px' }}>
-                    <RowMenu />
-                  </td>
-                </tr>
-              ))}
-          </tbody>
+              .sort(getComparator(order, orderBy))
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((row, index) => {
+                const isItemSelected = isSelected(row.id);
+                const labelId = `enhanced-table-checkbox-${index}`;
+
+                return (
+                  <TableRow
+                    hover
+                    onClick={(event) => handleClick(event, row.id)}
+                    role="checkbox"
+                    aria-checked={isItemSelected}
+                    tabIndex={-1}
+                    key={row.id}
+                    selected={isItemSelected}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        color="primary"
+                        checked={isItemSelected}
+                        inputProps={{
+                          "aria-labelledby": labelId,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell
+                      component="th"
+                      id={labelId}
+                      scope="row"
+                      padding="none"
+                    >
+                      {row.name}
+                    </TableCell>
+                    <TableCell align="right">{row.budget}</TableCell>
+                    <TableCell align="right">{row.price}</TableCell>
+                    <TableCell align="right">{row.startDate}</TableCell>
+                    <TableCell align="right">{row.endDate}</TableCell>
+                  </TableRow>
+                );
+              })}
+            {emptyRows > 0 && (
+              <TableRow style={{ height: 53 * emptyRows }}>
+                <TableCell colSpan={6} />
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
-      </Sheet>
-    </React.Fragment>
+      </TableContainer>
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={rows.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+    </Paper>
   );
 }

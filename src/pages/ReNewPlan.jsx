@@ -56,7 +56,7 @@ const ReNewPlan = () => {
   const [couponError, setCouponError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const plansCollectionRef = collection(db, "plans");
+  const plansCollectionRef = collection(db, "plansmarket");
 
   const { toast } = useToast();
 
@@ -94,7 +94,7 @@ const ReNewPlan = () => {
     let priceValue = parseFloat(price);
     try {
       if (coupon.trim() !== "") {
-        const couponRef = doc(db, "coupons", coupon.trim());
+        const couponRef = doc(db, "couponsmarket", coupon.trim());
         const couponRefData = await getDoc(couponRef);
         if (couponRefData.exists()) {
           const couponData = couponRefData.data();
@@ -119,7 +119,7 @@ const ReNewPlan = () => {
           return;
         }
       }
-      const userDoc = doc(db, "agencies", user.uid);
+      const userDoc = doc(db, "marketplace", user.uid);
       const subscriptionsCollectionRef = collection(userDoc, "subscriptions");
 
       await addDoc(subscriptionsCollectionRef, {

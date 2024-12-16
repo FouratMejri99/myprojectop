@@ -1,34 +1,16 @@
-import React from "react";
-import ReactApexChart from "react-apexcharts";
+// src/charts/PieChart.jsx
+import { ArcElement, Chart as ChartJS, Legend, Tooltip } from "chart.js";
+import { Pie } from "react-chartjs-2";
 
-class PieChart extends React.Component {
-  constructor(props) {
-    super(props);
+// Register required components for Chart.js
+ChartJS.register(ArcElement, Tooltip, Legend);
 
-    this.state = {
-      chartData: [],
-      chartOptions: {},
-    };
-  }
-
-  componentDidMount() {
-    this.setState({
-      chartData: this.props.chartData,
-      chartOptions: this.props.chartOptions,
-    });
-  }
-
-  render() {
-    return (
-      <ReactApexChart
-        options={this.state.chartOptions}
-        series={this.state.chartData}
-        type='pie'
-        width='100%'
-        height='100%'
-      />
-    );
-  }
-}
+const PieChart = ({ chartData, chartOptions, h, w }) => {
+  return (
+    <div style={{ height: h, width: w }}>
+      <Pie data={chartData} options={chartOptions} />
+    </div>
+  );
+};
 
 export default PieChart;

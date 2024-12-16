@@ -1,20 +1,32 @@
+// src/pages/products/ProductsPage.jsx
+
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import Box from "@mui/joy/Box";
-import { Breadcrumbs, Button, Container } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Breadcrumbs, Button, Container, Link } from "@mui/material";
+import { useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import Iconify from "../../../components/iconify";
 import EnhancedTable from "../../../components/products/producttable";
 import "./product.css";
+
 export default function ProductsPage() {
+  const [tableKey, setTableKey] = useState(0);
+  // Function to reload the InvoicesTable
+  const reloadTable = () => {
+    setTableKey((prevKey) => prevKey + 1);
+  };
   return (
     <Container>
       {/* Page Title */}
-
-      <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+        onClick={reloadTable}
+      >
         <h1 className="text-2xl font-bold">Products List</h1>
       </Box>
 
+      {/* Breadcrumbs and New Product Button */}
       <Box
         sx={{
           display: "flex",
@@ -32,20 +44,21 @@ export default function ProductsPage() {
           separator={<ChevronRightRoundedIcon fontSize="sm" />}
           sx={{ pl: 0 }}
         >
-          <Link underline="none" color="neutral" href="./" aria-label="Home">
+          <Link underline="none" color="neutral" href="/" aria-label="Home">
             <HomeRoundedIcon />
           </Link>
           <Link
             underline="hover"
             color="primary"
-            href="./analytics"
+            href="/analytics"
             sx={{ fontSize: 12, fontWeight: 500 }}
           >
             Products List
           </Link>
         </Breadcrumbs>
 
-        <Link to="/newProducts" style={{ textDecoration: "none" }}>
+        {/* New Product Button */}
+        <RouterLink to="/newProducts" style={{ textDecoration: "none" }}>
           <Button
             variant="contained"
             className="new-product-button"
@@ -53,12 +66,12 @@ export default function ProductsPage() {
           >
             New Product
           </Button>
-        </Link>
+        </RouterLink>
       </Box>
 
-      {/* Products View */}
+      {/* Products Table View */}
       <div className="grid lg:grid-cols-1 md:grid-cols-4 gap-7 lg:gap-4 mt-10">
-        <EnhancedTable />
+        <EnhancedTable key={tableKey} />
       </div>
     </Container>
   );

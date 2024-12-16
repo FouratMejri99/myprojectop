@@ -1,4 +1,4 @@
-import { db, storage } from "@/config/firebase"; // Import Firebase setup (Firestore and Storage)
+import { db, storage } from "@/config/firebase";
 import {
   Alert,
   Box,
@@ -8,87 +8,83 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { addDoc, collection } from "firebase/firestore"; // Firestore functions
-import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage"; // Firebase Storage functions
+import {
+  addDoc,
+  collection,
+  getDocs,
+  serverTimestamp,
+} from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { useState } from "react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
 import { useNavigate } from "react-router-dom";
-import Iconify from "../../../components/iconify";
-import upload from "../../../img/upload.png"; // Default upload image
-import "./newproduct.css";
 
-function NewProduct() {
-  const navigate = useNavigate();
-  const [postImage, setPostImage] = useState(null); // State to hold the selected file
-  const [imageUrl, setImageUrl] = useState(""); // State to hold the image URL after upload
+const NewProduct = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false); // Snackbar state for notifications
+  const [postImage, setPostImage] = useState(null);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const navigate = useNavigate();
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const userId = localStorage.getItem("userId");
 
     try {
-      // Upload the image to Firebase Storage
+      const marketplaceQuery = await getDocs(collection(db, "marketplace"));
+      let latestMarketplaceId;
+      marketplaceQuery.forEach((doc) => {
+        latestMarketplaceId = doc.id;
+      });
+
+      if (!latestMarketplaceId) {
+        console.error("No marketplace found.");
+        return;
+      }
+
       if (postImage) {
         const storageRef = ref(storage, `marketplace/${postImage.name}`);
         const uploadTask = uploadBytesResumable(storageRef, postImage);
 
-        // Monitor the upload progress and completion
         uploadTask.on(
           "state_changed",
-          (snapshot) => {
-            // Optional: You can track upload progress here
-          },
+          (snapshot) => {},
           (error) => {
             console.error("Error uploading image: ", error);
           },
           async () => {
-            // Get download URL after the upload is complete
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setImageUrl(downloadURL); // Set the image URL in state
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              const formData = {
+                name,
+                description,
+                category,
+                price,
+                stock,
+                image: downloadURL,
+                createdBy: userId,
+                createdAt: serverTimestamp(),
+                payment: "Pending...",
+                flouci: "fail",
+              };
 
-            // Add product to Firestore with image URL
-            const formData = {
-              name,
-              description,
-              category,
-              price,
-              stock,
-              image: downloadURL, // Store the image URL in Firestore
-              createdBy: userId,
-              Publish: "no",
-            };
-            await addDoc(collection(db, "products"), formData); // Add product to Firestore
-            console.log("Product successfully added!");
-
-            // Show success notification
-            setOpenSnackbar(true);
-            navigate("/products"); // Redirect to products page after adding the product
+              await addDoc(
+                collection(db, `marketplace/${latestMarketplaceId}/products`),
+                formData
+              );
+              setOpenSnackbar(true);
+              navigate("/products");
+            } catch (error) {
+              console.error("Error adding product to Firestore: ", error);
+            }
           }
         );
       }
     } catch (error) {
-      console.error("Error adding product: ", error);
+      console.error("Error retrieving marketplace ID: ", error);
     }
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    setPostImage(file); // Set the selected file for uploading
-  };
-
-  // Close Snackbar
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setOpenSnackbar(false);
   };
 
   return (
@@ -98,62 +94,34 @@ function NewProduct() {
         padding: "20px",
         borderRadius: "12px",
         boxShadow: 3,
-        maxWidth: 1020,
+        maxWidth: 600,
         margin: "auto",
       }}
     >
       <Typography variant="h4" gutterBottom>
-        Create New Product
+        New Product
       </Typography>
-
       <form onSubmit={handleFormSubmit}>
-        {/* Product Name Field */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Detail</Typography>
-          <TextField
-            label="Product Name"
-            variant="outlined"
-            fullWidth
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-        </Box>
-
-        {/* Price and Stock Fields */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Price & Stock</Typography>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <TextField
-              label="Price"
-              variant="outlined"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(parseFloat(e.target.value))}
-              fullWidth
-            />
-            <TextField
-              label="Stock"
-              variant="outlined"
-              type="number"
-              value={stock}
-              onChange={(e) => setStock(parseInt(e.target.value, 10))}
-              fullWidth
-            />
-          </Box>
-        </Box>
-
-        {/* Description Field with ReactQuill Editor */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Content</Typography>
-          <ReactQuill
-            value={description}
-            onChange={setDescription}
-            style={{ height: 200 }}
-          />
-        </Box>
-
-        {/* Category Selection Field */}
+        <TextField
+          label="Product Name"
+          variant="outlined"
+          fullWidth
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          sx={{ mb: 2 }}
+        />
+        <TextField
+          label="Product Description"
+          variant="outlined"
+          fullWidth
+          multiline
+          rows={4}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          sx={{ mb: 2 }}
+        />
         <TextField
           select
           label="Category"
@@ -161,63 +129,71 @@ function NewProduct() {
           fullWidth
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          sx={{ mb: 3 }}
+          required
+          sx={{ mb: 2 }}
         >
           <MenuItem value="Decoration">Decoration</MenuItem>
           <MenuItem value="Furniture">Furniture</MenuItem>
           <MenuItem value="Lighting">Lighting</MenuItem>
         </TextField>
-
-        {/* File Upload Field */}
-        <Box sx={{ mb: 3, textAlign: "center" }}>
-          <label htmlFor="file-upload" className="custom-file-upload">
-            <div style={{ width: "100px", height: "100px" }}>
-              <img
-                src={imageUrl || upload} // Display the uploaded image or default placeholder
-                alt="Choose a file"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-          </label>
-          <input
-            type="file"
-            id="file-upload"
-            accept=".jpeg, .png, .jpg"
-            onChange={handleFileUpload} // Handle file upload
-            style={{ display: "none" }}
-          />
-          <Typography variant="h6" sx={{ mt: 2 }}>
-            Drop or Select file
-          </Typography>
+        <TextField
+          label="Price"
+          variant="outlined"
+          type="number"
+          fullWidth
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          required
+          sx={{ mb: 2 }}
+        />
+        <TextField
+          label="Stock"
+          variant="outlined"
+          type="number"
+          fullWidth
+          value={stock}
+          onChange={(e) => setStock(e.target.value)}
+          required
+          sx={{ mb: 2 }}
+        />
+        <Box sx={{ mb: 2, textAlign: "center" }}>
+          <Button variant="contained" component="label" sx={{ width: "100%" }}>
+            Upload Image
+            <input
+              type="file"
+              hidden
+              onChange={(e) => setPostImage(e.target.files[0])}
+              accept="image/*"
+              required
+            />
+          </Button>
+          {postImage && (
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              {postImage.name}
+            </Typography>
+          )}
         </Box>
-
-        {/* Submit Button */}
         <Button
           variant="contained"
           type="submit"
-          startIcon={<Iconify icon="eva:plus-fill" />}
-          sx={{ backgroundColor: "black", color: "white", width: 200 }}
+          fullWidth
+          sx={{ backgroundColor: "black", color: "white" }}
         >
           Add Product
         </Button>
       </form>
 
-      {/* Snackbar Notification */}
       <Snackbar
         open={openSnackbar}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setOpenSnackbar(false)}
       >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
+        <Alert onClose={() => setOpenSnackbar(false)} severity="success">
           Product successfully added!
         </Alert>
       </Snackbar>
     </Box>
   );
-}
+};
 
 export default NewProduct;

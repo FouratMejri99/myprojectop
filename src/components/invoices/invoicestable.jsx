@@ -1,6 +1,8 @@
 import { db } from "@/config/firebase"; // Adjust the import according to your project structure
+import AddShoppingCartOutlinedIcon from "@mui/icons-material/AddShoppingCartOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import { Dialog, DialogContent, TableCell } from "@mui/material";
 import Box from "@mui/material/Box";
 import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
@@ -8,7 +10,6 @@ import Paper from "@mui/material/Paper";
 import { alpha } from "@mui/material/styles";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
@@ -20,31 +21,30 @@ import Typography from "@mui/material/Typography";
 import { visuallyHidden } from "@mui/utils";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import PropTypes from "prop-types";
-import * as React from "react";
 import { useEffect, useState } from "react";
+import Flouci from "../flouci/flouci";
 
-function createData(id, name, budget, price, startDate, endDate) {
+// Updated createData to include status
+function createData(id, name, createdAt, price, payment) {
   return {
     id,
     name,
-    budget,
+    createdAt,
     price,
-    startDate,
-    endDate,
+    payment,
   };
 }
 
 const headCells = [
   { id: "name", numeric: false, disablePadding: true, label: "Name" },
-  { id: "budget", numeric: true, disablePadding: false, label: "Budget" },
-  { id: "price", numeric: true, disablePadding: false, label: "Price" },
   {
-    id: "startDate",
+    id: "createdAt",
     numeric: true,
     disablePadding: false,
-    label: "Start Date",
+    label: "Created At",
   },
-  { id: "endDate", numeric: true, disablePadding: false, label: "End Date" },
+  { id: "price", numeric: true, disablePadding: false, label: "Price" },
+  { id: "payment", numeric: true, disablePadding: false, label: "Status" }, // Updated to match "Price"
 ];
 
 function descendingComparator(a, b, orderBy) {
@@ -101,7 +101,13 @@ function InvoicesTableHead(props) {
               direction={orderBy === headCell.id ? order : "asc"}
               onClick={createSortHandler(headCell.id)}
             >
-              {headCell.label}
+              <Typography
+                variant="subtitle1"
+                component="span"
+                style={{ fontWeight: 600 }}
+              >
+                {headCell.label}
+              </Typography>
               {orderBy === headCell.id ? (
                 <Box component="span" sx={visuallyHidden}>
                   {order === "desc" ? "sorted descending" : "sorted ascending"}
@@ -151,11 +157,11 @@ function EnhancedTableToolbar(props) {
       ) : (
         <Typography
           sx={{ flex: "1 1 100%" }}
-          variant="h6"
           id="tableTitle"
-          component="div"
+          component="span"
+          style={{ fontWeight: 600 }}
         >
-          Products
+          Invoices
         </Typography>
       )}
       {numSelected > 0 ? (
@@ -184,52 +190,45 @@ export default function InvoicesTable() {
   const [orderBy, setOrderBy] = useState("name");
   const [selected, setSelected] = useState([]);
   const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
+  const [dense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [rows, setRows] = useState([]);
+  const [open, setOpen] = useState(false); // Add open state for Dialog
+  const [selectedProductId, setSelectedProductId] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
+      // Fetch all marketplaces and sort to get the latest one
+      const marketplacesSnapshot = await getDocs(collection(db, "marketplace"));
+      const marketplaces = marketplacesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Find the latest marketplace by sorting by createdAt
+      const latestMarketplace = marketplaces.sort(
+        (a, b) => b.createdAt - a.createdAt
+      )[0];
+
+      if (!latestMarketplace) {
+        console.error("No marketplaces found.");
+        return;
+      }
+
+      const marketplaceId = latestMarketplace.id;
       const q = query(
-        collection(db, "products"),
-        where("publish", "==", "yes")
+        collection(db, "marketplace", marketplaceId, "products"),
+        where("publish", "==", "Boosted")
       );
       const querySnapshot = await getDocs(q);
-      const productData = {};
+      const formattedRows = [];
 
-      // Group products by name
+      // Fetching product data
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        const { name, budget, price, startdate, enddate } = data;
+        const { name, createdAt, price, payment } = data;
 
-        if (!productData[name]) {
-          productData[name] = [];
-        }
-
-        productData[name].push({
-          id: doc.id,
-          budget,
-          price,
-          startDate: startdate,
-          endDate: enddate,
-        });
-      });
-
-      // Flatten the grouped data into rows
-      const formattedRows = [];
-      Object.entries(productData).forEach(([name, products]) => {
-        products.forEach((product) => {
-          formattedRows.push(
-            createData(
-              product.id,
-              name,
-              product.budget,
-              product.price,
-              product.startDate,
-              product.endDate
-            )
-          );
-        });
+        formattedRows.push(createData(doc.id, name, createdAt, price, payment));
       });
 
       setRows(formattedRows);
@@ -281,25 +280,20 @@ export default function InvoicesTable() {
     setPage(0);
   };
 
-  const handleChangeDense = (event) => {
-    setDense(event.target.checked);
+  const handleIconClick = (id) => {
+    setSelectedProductId(id); // Set the selected product ID
+    setOpen(true); // Open the dialog
   };
 
-  // Avoid a layout jump when reaching the last page with empty rows.
+  const handleClose = () => {
+    setOpen(false); // Close the dialog
+  };
+
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
-  const visibleRows = React.useMemo(
-    () =>
-      rows
-        .slice()
-        .sort(getComparator(order, orderBy))
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [rows, order, orderBy, page, rowsPerPage]
-  );
-
   return (
-    <Paper sx={{ width: "100%", mb: 2 }}>
+    <Paper sx={{ width: "100%", overflow: "hidden" }}>
       <EnhancedTableToolbar numSelected={selected.length} />
       <TableContainer>
         <Table sx={{ minWidth: 750 }} size={dense ? "small" : "medium"}>
@@ -312,44 +306,120 @@ export default function InvoicesTable() {
             rowCount={rows.length}
           />
           <TableBody>
-            {visibleRows.map((row, index) => {
-              const isItemSelected = selected.indexOf(row.id) !== -1;
-              const labelId = `enhanced-table-checkbox-${index}`;
+            {rows
+              .slice()
+              .sort(getComparator(order, orderBy))
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((row, index) => {
+                const isItemSelected = selected.indexOf(row.id) !== -1;
+                const labelId = `enhanced-table-checkbox-${index}`;
 
-              return (
-                <TableRow
-                  hover
-                  onClick={(event) => handleClick(event, row.id)}
-                  role="checkbox"
-                  aria-checked={isItemSelected}
-                  tabIndex={-1}
-                  key={row.id}
-                  selected={isItemSelected}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      color="primary"
-                      checked={isItemSelected}
-                      inputProps={{ "aria-labelledby": labelId }}
-                    />
-                  </TableCell>
-                  <TableCell
-                    component="th"
-                    id={labelId}
-                    scope="row"
-                    padding="none"
+                return (
+                  <TableRow
+                    hover
+                    onClick={(event) => handleClick(event, row.id)}
+                    role="checkbox"
+                    aria-checked={isItemSelected}
+                    tabIndex={-1}
+                    key={row.id}
+                    selected={isItemSelected}
                   >
-                    {row.name}
-                  </TableCell>
-                  <TableCell align="right">{row.budget}</TableCell>
-                  <TableCell align="right">{row.price}</TableCell>
-                  <TableCell align="right">{row.startDate}</TableCell>
-                  <TableCell align="right">{row.endDate}</TableCell>
-                </TableRow>
-              );
-            })}
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        color="primary"
+                        checked={isItemSelected}
+                        inputProps={{
+                          "aria-labelledby": labelId,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell
+                      component="th"
+                      id={labelId}
+                      scope="row"
+                      padding="none"
+                    >
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <img
+                          src={
+                            row.imageUrl ? row.imageUrl : "src/img/invoices.png"
+                          }
+                          alt="Product Image"
+                          style={{
+                            width: "50px", // Increased size
+                            height: "50px", // Increased size
+                            marginRight: "8px",
+                            objectFit: "cover", // Ensures the image fits nicely within the bounds
+                            borderRadius: "12px", // Adjusted for rounded corners (use 50% for full circle)
+                          }}
+                        />
+                        <span>{row.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell align="right">
+                      {row.createdAt && row.createdAt.seconds ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                          }}
+                        >
+                          <Typography variant="body2">
+                            {new Date(
+                              row.createdAt.seconds * 1000
+                            ).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {new Date(
+                              row.createdAt.seconds * 1000
+                            ).toLocaleTimeString("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                              hour12: true, // Optional for AM/PM
+                            })}
+                          </Typography>
+                        </div>
+                      ) : (
+                        "N/A"
+                      )}
+                    </TableCell>
+
+                    <TableCell align="right">${row.price}</TableCell>
+                    <TableCell align="right">
+                      <span
+                        style={{
+                          backgroundColor:
+                            row.payment === "paid"
+                              ? "green"
+                              : row.payment === "Pending..."
+                              ? "#003366"
+                              : row.payment === "overdue"
+                              ? "#ff465d"
+                              : "transparent", // Default color if none match
+                          color: "white",
+                          padding: "2px 4px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        {row.payment}
+                      </span>
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton onClick={() => handleIconClick(row.id)}>
+                        <AddShoppingCartOutlinedIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             {emptyRows > 0 && (
-              <TableRow style={{ height: 53 * emptyRows }}>
+              <TableRow style={{ height: (dense ? 33 : 53) * emptyRows }}>
                 <TableCell colSpan={6} />
               </TableRow>
             )}
@@ -365,6 +435,13 @@ export default function InvoicesTable() {
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+
+      {/* Dialog for product details */}
+      <Dialog open={open} onClose={handleClose}>
+        <DialogContent>
+          <Flouci productId={selectedProductId} />
+        </DialogContent>
+      </Dialog>
     </Paper>
   );
 }

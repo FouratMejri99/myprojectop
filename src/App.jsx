@@ -33,10 +33,12 @@ const Layout = () => {
   const [expanded, setExpanded] = useState(true);
 
   return (
-    // light dark mode  is controlled by the theme provider in this file.
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <div className="flex font-baloo2">
+      <div className="flex font-baloo2 relative">
+        {/* Sidebar */}
         <Sidebar expanded={expanded} setExpanded={setExpanded} />
+
+        {/* Main Content */}
         <div
           className={`w-full transition-all ${
             expanded ? "xl:pl-[250px]" : "xl:pl-[150px]"
@@ -54,81 +56,31 @@ const Layout = () => {
 };
 
 function App() {
-  // these are the availbe routes for our app.
   const router = createBrowserRouter([
     {
       path: "/",
-      // the Protected component redirect us to the login page if there is no user
       element: (
         <Protected>
           <Layout />
         </Protected>
       ),
       children: [
-        {
-          path: "/",
-          element: <Dashboard />,
-        },
-        {
-          path: "/pros",
-          element: <TnkersPro />,
-        },
-        {
-          path: "/pros/:id",
-          element: <Account />,
-        },
-        {
-          path: "/clients",
-          element: <Tnkers />,
-        },
-        {
-          path: "/interventions",
-          element: <Bookings />,
-        },
-        {
-          path: "/analytics",
-          element: <Home />,
-        },
-        {
-          path: "/invoices",
-          element: <InvoicesPage />,
-        },
-        {
-          path: "/Products",
-          element: <EnhancedTable />,
-        },
-        {
-          path: "/newProducts",
-          element: <NewProduct />,
-        },
-        {
-          path: "/productdetails",
-          element: <RecipeReviewCard />,
-        },
-        {
-          path: "/editproduct",
-          element: <EditProduct />,
-        },
-        {
-          path: "/Orders",
-          element: <Orders />,
-        },
-        {
-          path: "/supprot",
-          element: <Support />,
-        },
-        {
-          path: "/settings",
-          element: <SettingsScreen />,
-        },
-        {
-          path: "/re-new-plan",
-          element: <ReNewPlan />,
-        },
-        {
-          path: "*",
-          element: <NotFound />,
-        },
+        { path: "/", element: <Dashboard /> },
+        { path: "/pros", element: <TnkersPro /> },
+        { path: "/pros/:id", element: <Account /> },
+        { path: "/clients", element: <Tnkers /> },
+        { path: "/interventions", element: <Bookings /> },
+        { path: "/analytics", element: <Home /> },
+        { path: "/invoices", element: <InvoicesPage /> },
+        { path: "/Products", element: <EnhancedTable /> },
+        { path: "/newProducts", element: <NewProduct /> },
+        { path: "/productdetails", element: <RecipeReviewCard /> },
+        { path: "/editproduct", element: <EditProduct /> },
+        { path: "/Orders", element: <Orders /> },
+        { path: "/supprot", element: <Support /> },
+        { path: "/settings", element: <SettingsScreen /> },
+        { path: "/re-new-plan", element: <ReNewPlan /> },
+        { path: "*", element: <NotFound /> },
       ],
     },
     {
@@ -142,15 +94,13 @@ function App() {
         </ThemeProvider>
       ),
     },
-    {
-      path: "/login",
-      element: <Login />,
-    },
+    { path: "/login", element: <Login /> },
     {
       path: "/register",
       element: (
         <>
-          <Register /> <Toaster />
+          <Register />
+          <Toaster />
         </>
       ),
     },
@@ -165,7 +115,6 @@ function App() {
       }
     >
       <AuthContext>
-        {/* Router will handle all of our routing logic and render the correct component based on the current url. */}
         <RouterProvider router={router} />
       </AuthContext>
     </Suspense>

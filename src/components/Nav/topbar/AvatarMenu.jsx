@@ -1,9 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { auth } from "@/config/firebase";
 import { signOut } from "firebase/auth";
@@ -12,8 +12,8 @@ import { LogOut } from "lucide-react";
 export function AvatarMenu() {
   const handleLogout = async () => {
     try {
-      console.log("Attempting to log out...");  // Debugging log
-      await signOut(auth);  // Sign out the user
+      console.log("Attempting to log out...");
+      await signOut(auth); // Use the `auth` object here
       console.log("Successfully logged out");
     } catch (error) {
       console.error("Error signing out:", error);

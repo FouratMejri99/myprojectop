@@ -1,11 +1,11 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{js,jsx}',
-    './components/**/*.{js,jsx}',
-    './app/**/*.{js,jsx}',
-    './src/**/*.{js,jsx}',
+    "./pages/**/*.{js,jsx}",
+    "./components/**/*.{js,jsx}",
+    "./app/**/*.{js,jsx}",
+    "./src/**/*.{js,jsx}",
   ],
   prefix: "",
   theme: {
@@ -17,7 +17,7 @@ module.exports = {
       },
     },
     fontFamily: {
-      'baloo2': ['"Baloo 2"', 'sans-serif']
+      baloo2: ['"Baloo 2"', "sans-serif"],
     },
     extend: {
       colors: {
@@ -71,10 +71,12 @@ module.exports = {
         },
         orbit: {
           "0%": {
-            transform: "rotate(0deg) translateY(calc(var(--radius) * 1px)) rotate(0deg)",
+            transform:
+              "rotate(0deg) translateY(calc(var(--radius) * 1px)) rotate(0deg)",
           },
           "100%": {
-            transform: "rotate(360deg) translateY(calc(var(--radius) * 1px)) rotate(-360deg)",
+            transform:
+              "rotate(360deg) translateY(calc(var(--radius) * 1px)) rotate(-360deg)",
           },
         },
       },
@@ -86,26 +88,26 @@ module.exports = {
     },
   },
   plugins: [
-    require("tailwindcss-animate"),
+    import("tailwindcss-animate"),
     function ({ addUtilities }) {
       const newUtilities = {
-        '.custom-scrollbar': {
-          '&::-webkit-scrollbar': {
-            width: '8px',
+        ".custom-scrollbar": {
+          "&::-webkit-scrollbar": {
+            width: "8px",
           },
-          '&::-webkit-scrollbar-track': {
-            background: 'hsl(var(--background))',
+          "&::-webkit-scrollbar-track": {
+            background: "hsl(var(--background))",
           },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'hsl(var(--border))',
-            borderRadius: '20px',
-            border: '1px solid hsl(var(--background))',
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "hsl(var(--border))",
+            borderRadius: "20px",
+            border: "1px solid hsl(var(--background))",
           },
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'hsl(var(--border)) hsl(var(--background))',
+          scrollbarWidth: "thin",
+          scrollbarColor: "hsl(var(--border)) hsl(var(--background))",
         },
-      }
-      addUtilities(newUtilities, ["responsive", "hover"])
-    }
+      };
+      addUtilities(newUtilities, ["responsive", "hover"]);
+    },
   ],
-}
+};

@@ -8,10 +8,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Headset,
+  LayoutDashboard,
   MessageCircleMore,
   Settings,
   ShoppingCart,
+  SquareUser,
   TrendingUp,
 } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
@@ -19,6 +20,17 @@ import { Link, useLocation } from "react-router-dom";
 
 // List of navigation items with title, icon, active state, and link
 const navItems = [
+  {
+    title: "Dashboard",
+    icon: <LayoutDashboard />,
+    link: "/",
+  },
+  {
+    title: "Pros",
+    icon: <SquareUser />,
+    link: "/pros",
+  },
+
   {
     title: "Analytics",
     icon: <TrendingUp />,
@@ -183,23 +195,6 @@ const Sidebar = ({ className, expanded, setExpanded, ...props }) => {
           </CardContent>
 
           <CardContent>
-            <Link
-              to={"/support"}
-              className={`mb-2 p-3 flex items-center last:mb-0 cursor-pointer rounded-md transition-all ${
-                "/support" === activeLink
-                  ? "bg-primary/15 hover:bg-primary/50"
-                  : "hover:bg-accent"
-              } ${expanded ? "" : "flex-col"}`}
-            >
-              <Headset />
-              <p
-                className={`${
-                  expanded ? "text-lg" : "text-sm"
-                } font-medium leading-none ms-1`}
-              >
-                Support
-              </p>
-            </Link>
             <Link
               to={"/settings"}
               className={`mb-2 p-3 flex items-center last:mb-0 cursor-pointer rounded-md transition-all ${

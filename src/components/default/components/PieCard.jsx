@@ -1,13 +1,15 @@
-import { Flex, Select, Text, useColorModeValue } from "@chakra-ui/react";
-// Custom components
+import { db } from "@/config/firebase"; // Adjust the path to your firebase.js
+import { useColorModeValue } from "@chakra-ui/react";
+import { collection, getDocs } from "firebase/firestore";
+import { useEffect, useState } from "react";
 import Card from "../../card/Card.jsx";
-import PieChart from "../../charts/PieChart.jsx";
-import { pieChartData, pieChartOptions } from "../variables/charts";
+import PieChart from "../../charts/PieChart.jsx"; // Import your PieChart
 
 export default function Conversion(props) {
   const { ...rest } = props;
 
-  // Chakra Color Mode
+  const [paymentData, setPaymentData] = useState({ paid: 0, pending: 0 });
+
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const cardColor = useColorModeValue("white", "navy.700");
   const cardShadow = useColorModeValue(
@@ -15,55 +17,79 @@ export default function Conversion(props) {
     "unset"
   );
   const outerCardShadow = useColorModeValue(
-    "0px 4px 12px rgba(0, 0, 0, 0.1)", 
+    "0px 4px 12px rgba(0, 0, 0, 0.1)",
     "0px 4px 12px rgba(0, 0, 0, 0.2)"
   );
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "products"));
+        const counts = { paid: 0, pending: 0, overdue: 0 };
+
+        querySnapshot.forEach((doc) => {
+          const product = doc.data();
+          if (product.payement === "paid") {
+            counts.paid += 1;
+          } else if (product.payement === "Pending...") {
+            counts.pending += 1;
+          } else if (product.payement === "overdue") {
+            counts.overdue += 1;
+          }
+        });
+
+        setPaymentData(counts);
+      } catch (error) {
+        console.error("Error fetching product data from Firestore:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const pieChartData = {
+    labels: ["Paid", "Pending", "Overdue"],
+    datasets: [
+      {
+        label: "Payment Status",
+        data: [paymentData.paid, paymentData.pending, paymentData.overdue],
+        backgroundColor: ["green", "#003366", "#ff465d"],
+        borderColor: ["#FFFFFF", "#FFFFFF", "#FFFFFF"],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => `${context.label}: ${context.raw}`,
+        },
+      },
+    },
+  };
+
   return (
     <Card
-      p='20px'
-      align='center'
-      direction='column'
-      w='100%'
-      boxShadow={outerCardShadow} // Added box shadow for the outer card
-      {...rest}>
-      <Flex
-        px={{ base: "0px", "2xl": "10px" }}
-        justifyContent='space-between'
-        alignItems='center'
-        w='100%'
-        mb='8px'>
-        <Text color={textColor} fontSize='md' fontWeight='600' mt='4px'>
-          Your Pie Chart
-        </Text>
-        <Select
-          fontSize='sm'
-          variant='subtle'
-          defaultValue='monthly'
-          width='unset'
-          fontWeight='700'>
-          <option value='daily'>Daily</option>
-          <option value='monthly'>Monthly</option>
-          <option value='yearly'>Yearly</option>
-        </Select>
-      </Flex>
-
+      p="20px"
+      align="center"
+      direction="column"
+      w="100%"
+      h="99%"
+      boxShadow={outerCardShadow}
+      {...rest}
+    >
       <PieChart
-        h='100%'
-        w='100%'
+        h="260px" // Set your desired height
+        w="100%"
         chartData={pieChartData}
         chartOptions={pieChartOptions}
       />
-      <Card
-        bg={cardColor}
-        flexDirection='row'
-        boxShadow={cardShadow} // Existing shadow for the inner card
-        w='100%'
-        p='15px'
-        px='90px'
-        mt='15px'
-        mx='auto'>
-      </Card>
     </Card>
   );
 }

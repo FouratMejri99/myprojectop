@@ -1,4 +1,4 @@
-import { db } from "@/config/firebase"; // Import Firestore
+import { db, storage } from "@/config/firebase"; // Import Firestore
 import DeleteIcon from "@mui/icons-material/Delete";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ShareIcon from "@mui/icons-material/Share";
@@ -16,7 +16,7 @@ import { styled } from "@mui/material/styles";
 import { deleteDoc, doc } from "firebase/firestore"; // Import deleteDoc
 import { getDownloadURL, ref } from "firebase/storage";
 import { useEffect, useState } from "react";
-import Booster from "./Booster"; // Import the Booster dialog
+import Booster from "./booster.jsx"; // Import the Booster dialog
 
 // Define ExpandMore styled component
 const ExpandMore = styled((props) => {
@@ -31,7 +31,7 @@ const ExpandMore = styled((props) => {
 }));
 
 // RecipeReviewCard Component
-export const RecipeReviewCard = ({ product, onDelete }) => {
+export const RecipeReviewCard = ({ product, onDelete, marketplaceId }) => {
   const [expanded, setExpanded] = useState(false); // Manage expanded state
   const [imageUrl, setImageUrl] = useState(""); // Image URL from Firebase Storage
   const [isDialogOpen, setIsDialogOpen] = useState(false); // State to handle Booster dialog
@@ -42,8 +42,10 @@ export const RecipeReviewCard = ({ product, onDelete }) => {
 
   const handleDelete = async () => {
     try {
-      // Delete the document from Firestore
-      await deleteDoc(doc(db, "products", product.id)); // Assuming product has an id field
+      // Delete the document from Firestore, using the marketplace ID
+      await deleteDoc(
+        doc(db, "marketplace", marketplaceId, "products", product.id)
+      ); // Adjusted to point to the right path
       // Call the onDelete callback to remove the card from the UI
       onDelete(product.id); // Pass the product id to the parent component
     } catch (error) {
@@ -102,14 +104,14 @@ export const RecipeReviewCard = ({ product, onDelete }) => {
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
-          <Typography paragraph>
-            Price: ${product ? product.price : "0.00"}
+          <Typography variant="body1" sx={{ mb: 0.5 }}>
+            <strong>Price:</strong> ${product ? product.price : "0.00"}
           </Typography>
-          <Typography paragraph>
-            Stock: {product ? product.stock : "0"}
+          <Typography variant="body1" sx={{ mb: 0.5 }}>
+            <strong>Stock:</strong> {product ? product.stock : "0"}
           </Typography>
-          <Typography paragraph>
-            Category: {product ? product.category : ""}
+          <Typography variant="body1" sx={{ mb: 0.5 }}>
+            <strong>Category:</strong> {product ? product.category : ""}
           </Typography>
         </CardContent>
       </Collapse>
